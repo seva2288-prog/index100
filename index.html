@@ -7440,7 +7440,7 @@ class PWAConfig {
 }
 
 // ================================================================
-// 4. ЭКСПОРТ ОТЧЕТОВ
+// 4. ЭКСПОРТ ОТЧЕТОВ (ПОЛНАЯ ИСПРАВЛЕННАЯ ВЕРСИЯ)
 // ================================================================
 
 class ReportExporter {
@@ -7452,6 +7452,201 @@ class ReportExporter {
             csv: this.exportCSV.bind(this)
         };
     }
+
+    // ===== ГЕНЕРАЦИЯ ОТЧЕТА =====
+    generateReport(bets, recommendations, stats) {
+        // Фильтруем ставки
+        const completed = bets.filter(b => b.outcome && b.outcome !== 'pending');
+        const wins = completed.filter(b => b.outcome === 'win');
+        const losses = completed.filter(b => b.outcome === 'loss');
+        
+        return {
+            generatedAt: new Date().toISOString(),
+            version: '8.0',
+            summary: {
+                totalBets: bets.length,
+                activeBets: bets.filter(b => b.outcome === 'pending').length,
+                completedBets: completed.length,
+                wins: wins.length,
+                losses: losses.length,
+                winRate: completed.length > 0 ? (wins.length / completed.length) * 100 : 0,
+                profit: wins.length - losses.length,
+                roi: completed.length > 0 ? ((wins.length - losses.length) / completed.length) * 100 : 0
+            },
+            recommendations: recommendations.slice(0, 10),
+            stats: stats || {},
+            bets: bets.slice(-50).map(b => ({
+                date: b.date || new Date().toISOString(),
+                match: b.match || '—',
+                type: b.mode || '—',
+                prediction: b.value || '—',
+                outcome: b.outcome || 'pending',
+                confidence: b.confidence || 0,
+                odds: b.odds || 0,
+                profit: b.outcome === 'win' ? 1 : b.outcome === 'loss' ? -1 : 0
+            }))
+        };
+    }
+
+    // ===== ЭКСПОРТ HTML =====
+    exportHTML(report) {
+        const html = `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Отчет Квантум v8.0</title>
+    <style>
+        body { font-family: -apple-system, 'Segoe UI', Roboto, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background: #0b0e14; color: #e0e0e0; }
+        .header { text-align: center; padding: 20px 0; border-bottom: 1px solid #2a3140; }
+        .header h1 { color: #f7931a; }
+        .summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin: 20px 0; }
+        .summary .card { background: #1a1f2a; padding: 16px; border-radius: 12px; text-align: center; }
+        .summary .card .value { font-size: 24px; font-weight: 700; color: #f7931a; }
+        .summary .card .label { font-size: 12px; color: #666; }
+        .section { margin: 20px 0; }
+        .section h2 { color: #f7931a; font-size: 18px; border-bottom: 1px solid #2a3140; padding-bottom: 8px; }
+        table { width: 100%; border-collapse: collapse; margin: 12px 0; }
+        table th { background: #1a1f2a; padding: 8px; text-align: left; font-size: 11px; color: #666; text-transform: uppercase; }
+        table td { padding: 8px; border-bottom: 1px solid #2a3140; font-size: 13px; }
+        .win { color: #2ecc71; }
+        .loss { color: #e74c3c; }
+        .pending { color: #f1c40f; }
+        .footer { text-align: center; padding: 20px 0; border-top: 1px solid #2a3140; margin-top: 40px; font-size: 12px; color: #666; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>⚛️ Квантум v8.0</h1>
+        <p>Отчет сгенерирован: ${new Date(report.generatedAt).toLocaleString()}</p>
+    </div>
+    
+    <div class="summary">
+        <div class="card">
+            <div class="value">${report.summary.totalBets}</div>
+            <div class="label">Всего ставок</div>
+        </div>
+        <div class="card">
+            <div class="value">${report.summary.winRate.toFixed(1)}%</div>
+            <div class="label">Точность</div>
+        </div>
+        <div class="card">
+            <div class="value" style="color: ${report.summary.profit >= 0 ? '#2ecc71' : '#e74c3c'}">
+                ${report.summary.profit > 0 ? '+' : ''}${report.summary.profit}
+            </div>
+            <div class="label">Прибыль</div>
+        </div>
+        <div class="card">
+            <div class="value" style="color: ${report.summary.roi >= 0 ? '#2ecc71' : '#e74c3c'}">
+                ${report.summary.roi > 0 ? '+' : ''}${report.summary.roi.toFixed(1)}%
+            </div>
+            <div class="label">ROI</div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>📊 ТОП-5 Рекомендаций</h2>
+        ${report.recommendations.map((r, i) => `
+            <div style="background: #1a1f2a; padding: 12px; border-radius: 8px; margin: 8px 0; border-left: 3px solid ${r.rating >= 4 ? '#2ecc71' : '#f1c40f'};">
+                <div><strong>${i+1}. ${r.match}</strong></div>
+                <div style="font-size: 13px; color: #888;">${r.label} · Уверенность: ${r.confidence}% · Рейтинг: ${'⭐'.repeat(r.rating || 3)}</div>
+            </div>
+        `).join('')}
+    </div>
+
+    <div class="section">
+        <h2>📋 История ставок</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Дата</th>
+                    <th>Матч</th>
+                    <th>Прогноз</th>
+                    <th>Результат</th>
+                    <th>Прибыль</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${report.bets.map(b => `
+                    <tr>
+                        <td>${new Date(b.date).toLocaleDateString()}</td>
+                        <td>${b.match}</td>
+                        <td>${b.prediction}</td>
+                        <td class="${b.outcome}">${b.outcome === 'win' ? '✅' : b.outcome === 'loss' ? '❌' : '⏳'}</td>
+                        <td class="${b.profit >= 0 ? 'win' : 'loss'}">${b.profit > 0 ? '+' : ''}${b.profit}</td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="footer">
+        ⚛️ Квантум v8.0 · ${new Date().getFullYear()}
+    </div>
+</body>
+</html>
+        `;
+        return html;
+    }
+
+    // ===== ЭКСПОРТ PDF =====
+    exportPDF(report) {
+        const html = this.exportHTML(report);
+        const win = window.open('', '_blank');
+        if (win) {
+            win.document.write(html);
+            win.document.close();
+            win.print();
+        }
+    }
+
+    // ===== ЭКСПОРТ JSON =====
+    exportJSON(report) {
+        return JSON.stringify(report, null, 2);
+    }
+
+    // ===== ЭКСПОРТ CSV =====
+    exportCSV(report) {
+        const headers = ['Дата', 'Матч', 'Тип', 'Прогноз', 'Результат', 'Уверенность', 'Прибыль'];
+        const rows = report.bets.map(b => [
+            new Date(b.date).toLocaleDateString(),
+            `"${b.match}"`,
+            b.type,
+            `"${b.prediction}"`,
+            b.outcome === 'win' ? 'Выигрыш' : b.outcome === 'loss' ? 'Проигрыш' : 'Ожидание',
+            b.confidence + '%',
+            b.profit
+        ]);
+
+        return [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    }
+
+    // ===== ЭКСПОРТ В ФАЙЛ =====
+    exportToFile(report, format = 'html') {
+        const content = this.formats[format]?.(report);
+        if (!content) {
+            showToast('⚠️ Неподдерживаемый формат', 'error');
+            return;
+        }
+
+        const mimeTypes = {
+            html: 'text/html',
+            pdf: 'application/pdf',
+            json: 'application/json',
+            csv: 'text/csv'
+        };
+
+        const blob = new Blob([content], { type: mimeTypes[format] });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `report_${new Date().toISOString().slice(0, 10)}.${format}`;
+        a.click();
+        URL.revokeObjectURL(url);
+
+        showToast(`✅ Отчет экспортирован в ${format.toUpperCase()}`, 'success');
+    }
+}
 
     // ===== ГЕНЕРАЦИЯ ОТЧЕТА =====
     generateReport(bets, recommendations, stats) {

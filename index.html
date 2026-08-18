@@ -457,12 +457,23 @@
             color: var(--primary);
         }
         .match-card .match-stars {
-            position: absolute;
-            top: 8px;
-            right: 12px;
-            font-size: 14px;
-            letter-spacing: 1px;
-        }
+    position: absolute;
+    top: 8px;
+    right: 12px;
+    font-size: 14px;
+    letter-spacing: 1px;
+    z-index: 5;
+}
+.match-card .match-status {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    position: relative;
+    z-index: 10;
+}
         .match-card .match-stars .star {
             color: var(--text-muted);
             transition: var(--transition);
@@ -1337,6 +1348,31 @@
             color: var(--danger);
         }
 
+         .btn-turbo {
+    width: 100%;
+    margin-top: 4px;
+    padding: 8px;
+    border-radius: var(--radius-sm);
+    border: none;
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: #000;
+    font-weight: 700;
+    font-size: 12px;
+    cursor: pointer;
+    transition: var(--transition);
+}
+.btn-turbo:hover {
+    transform: scale(1.02);
+    box-shadow: 0 4px 15px rgba(247, 147, 26, 0.3);
+}
+.btn-turbo:active {
+    transform: scale(0.95);
+}
+.btn-turbo:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+        
         /* ---------- НЕПРЕДСКАЗУЕМОСТЬ ---------- */
         .badge-unpredictability {
             display: inline-block;
@@ -2721,74 +2757,144 @@
 
         // ===== КАРТОЧКА МАТЧА =====
         function renderMatchCard(match) {
-            var status = getMatchStatus(match);
-            var stars = '★'.repeat(match.rating || 3) + '☆'.repeat(5 - (match.rating || 3));
-            var scoreStr = (match.homeScore !== null && match.awayScore !== null) ? match.homeScore + ':' + match.awayScore : 'vs';
-            var eventsHtml = '';
-            if (match.events && match.events.length > 0) {
-                var ev = match.events.slice(0, 3);
-                for (var i = 0; i < ev.length; i++) {
-                    eventsHtml += '<span class="event"><span class="minute">' + ev[i].minute + "'</span> " + ev[i].emoji + ' ' + ev[i].label + '</span>';
-                }
-            }
-            var predHtml = match.isValue ? '<span class="pred"><span class="value">💰 VALUE</span> <span class="confidence high">+' + match.ev + '%</span></span>' : '';
-            var starsHtml = '';
-            var starsArr = stars.split('');
-            for (var s = 0; s < starsArr.length; s++) {
-                starsHtml += '<span class="star ' + (starsArr[s] === '★' ? 'active' : '') + '">' + starsArr[s] + '</span>';
-            }
-            return '<div class="match-card" onclick="openMatchDetail(' + match.id + ')">' +
-                '<div class="match-header"><span class="league">' + (match.flag || '🌍') + ' ' + (match.leagueName || match.league) + '</span><span class="time">' + formatTime(match.startTime) + '</span><span class="match-status ' + status.cls + '">' + status.emoji + ' ' + status.label + '</span></div>' +
-                '<div class="match-teams"><div class="team home"><span class="badge-team">⚽</span><span class="name">' + sanitizeHTML(match.home) + '</span></div><div class="score ' + (match.status === 'live' ? 'live' : '') + '">' + scoreStr + '</div><div class="team away"><span class="name">' + sanitizeHTML(match.away) + '</span><span class="badge-team">⚽</span></div></div>' +
-                (eventsHtml ? '<div class="match-events">' + eventsHtml + '</div>' : '') +
-                '<div class="match-predictions"><span class="pred">🎯 <span class="value">' + match.prediction + '</span></span><span class="pred">📊 <span class="confidence ' + (match.confidence >= 70 ? 'high' : match.confidence >= 50 ? 'medium' : 'low') + '">' + match.confidence + '%</span></span>' + predHtml + (match.isDerby ? '<span class="pred">⚔️ Дерби</span>' : '') + '</div>' +
-                '<div class="match-stars">' + starsHtml + '</div>' +
-                '<div class="match-actions"><button class="btn-primary" onclick="event.stopPropagation(); openMatchDetail(' + match.id + ')">📊 Детали</button><button class="btn-success" onclick="event.stopPropagation(); saveMatchBet(' + match.id + ')">💾 Сохранить</button><button class="btn-outline" onclick="event.stopPropagation(); rateMatch(' + match.id + ')">⭐ Оценить</button></div>' +
-                '<button class="btn-turbo" onclick="event.stopPropagation(); turboAnalyze(' + match.id + ')">🔥 Турбо-анализ v8.0</button>' +
-                '<div class="turbo-progress-container"><div class="turbo-progress-bar"><div class="fill turbo-progress-fill" style="width:0%"></div></div><div class="turbo-progress-text"><span class="step turbo-step">Шаг 0/8: Ожидание...</span><span class="percent turbo-percent">0%</span></div></div>' +
-                '<div class="turbo-result"></div></div>';
+    var status = getMatchStatus(match);
+    var stars = '★'.repeat(match.rating || 3) + '☆'.repeat(5 - (match.rating || 3));
+    var scoreStr = (match.homeScore !== null && match.awayScore !== null) ? match.homeScore + ':' + match.awayScore : 'vs';
+    var eventsHtml = '';
+    if (match.events && match.events.length > 0) {
+        var ev = match.events.slice(0, 3);
+        for (var i = 0; i < ev.length; i++) {
+            eventsHtml += '<span class="event"><span class="minute">' + ev[i].minute + "'</span> " + ev[i].emoji + ' ' + ev[i].label + '</span>';
         }
+    }
+    var predHtml = match.isValue ? '<span class="pred"><span class="value">💰 VALUE</span> <span class="confidence high">+' + match.ev + '%</span></span>' : '';
+    var starsHtml = '';
+    var starsArr = stars.split('');
+    for (var s = 0; s < starsArr.length; s++) {
+        starsHtml += '<span class="star ' + (starsArr[s] === '★' ? 'active' : '') + '">' + starsArr[s] + '</span>';
+    }
+    
+    // ПОЛНАЯ КАРТОЧКА С КНОПКОЙ ТУРБО-АНАЛИЗА
+    return '<div class="match-card" onclick="openMatchDetail(' + match.id + ')">' +
+        '<div class="match-header">' +
+            '<span class="league">' + (match.flag || '🌍') + ' ' + (match.leagueName || match.league) + '</span>' +
+            '<span class="time">' + formatTime(match.startTime) + '</span>' +
+            '<span class="match-status ' + status.cls + '">' + status.emoji + ' ' + status.label + '</span>' +
+        '</div>' +
+        '<div class="match-teams">' +
+            '<div class="team home"><span class="badge-team">⚽</span><span class="name">' + sanitizeHTML(match.home) + '</span></div>' +
+            '<div class="score ' + (match.status === 'live' ? 'live' : '') + '">' + scoreStr + '</div>' +
+            '<div class="team away"><span class="name">' + sanitizeHTML(match.away) + '</span><span class="badge-team">⚽</span></div>' +
+        '</div>' +
+        (eventsHtml ? '<div class="match-events">' + eventsHtml + '</div>' : '') +
+        '<div class="match-predictions">' +
+            '<span class="pred">🎯 <span class="value">' + match.prediction + '</span></span>' +
+            '<span class="pred">📊 <span class="confidence ' + (match.confidence >= 70 ? 'high' : match.confidence >= 50 ? 'medium' : 'low') + '">' + match.confidence + '%</span></span>' +
+            predHtml +
+            (match.isDerby ? '<span class="pred">⚔️ Дерби</span>' : '') +
+        '</div>' +
+        '<div class="match-stars">' + starsHtml + '</div>' +
+        '<div class="match-actions">' +
+            '<button class="btn-primary" onclick="event.stopPropagation(); openMatchDetail(' + match.id + ')">📊 Детали</button>' +
+            '<button class="btn-success" onclick="event.stopPropagation(); saveMatchBet(' + match.id + ')">💾 Сохранить</button>' +
+            '<button class="btn-outline" onclick="event.stopPropagation(); rateMatch(' + match.id + ')">⭐ Оценить</button>' +
+        '</div>' +
+        '<button class="btn-turbo" onclick="event.stopPropagation(); turboAnalyze(' + match.id + ')" style="width:100%;margin-top:4px;padding:8px;border-radius:var(--radius-sm);border:none;background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#000;font-weight:700;font-size:12px;cursor:pointer;transition:var(--transition);">🔥 Турбо-анализ v8.0</button>' +
+        '<div class="turbo-progress-container">' +
+            '<div class="turbo-progress-bar"><div class="fill turbo-progress-fill" style="width:0%"></div></div>' +
+            '<div class="turbo-progress-text"><span class="step turbo-step">Шаг 0/8: Ожидание...</span><span class="percent turbo-percent">0%</span></div>' +
+        '</div>' +
+        '<div class="turbo-result"></div>' +
+    '</div>';
+}
 
         // ===== ОТКРЫТИЕ ДЕТАЛЕЙ МАТЧА =====
         function openMatchDetail(matchId) {
-            var match = null;
-            var matches = getMatches();
-            for (var i = 0; i < matches.length; i++) {
-                if (matches[i].id === matchId) {
-                    match = matches[i];
-                    break;
-                }
+    try {
+        var match = null;
+        var matches = getMatches();
+        for (var i = 0; i < matches.length; i++) {
+            if (matches[i].id === matchId) {
+                match = matches[i];
+                break;
             }
-            if (!match) {
-                showToast('⚠️ Матч не найден', 'error');
-                return;
-            }
-            APP_STATE.selectedMatchId = matchId;
-            APP_STATE.currentMatch = match;
-            switchTab('match');
-            var container = document.getElementById('matchDetailContainer');
-            if (!container) return;
-            var status = getMatchStatus(match);
-            var scoreStr = (match.homeScore !== null && match.awayScore !== null) ? match.homeScore + ':' + match.awayScore : 'vs';
-            var stats = generateMatchStats(match);
-            var eventsHtml2 = '';
-            if (match.events && match.events.length > 0) {
-                for (var e = 0; e < match.events.length; e++) {
-                    eventsHtml2 += '<span><span style="color:var(--text-muted);">' + match.events[e].minute + "'</span> " + match.events[e].emoji + ' ' + match.events[e].label + '</span>';
-                }
-            }
-            var statsHtml = '';
-            for (var s = 0; s < stats.length; s++) {
-                statsHtml += '<div class="stat"><span class="label">' + stats[s].label + '</span><span class="value">' + stats[s].value + '</span></div>';
-            }
-            container.innerHTML = '<div class="match-detail-card"><div class="header-detail"><span class="league">' + (match.flag || '🌍') + ' ' + (match.leagueName || match.league) + '</span><span class="status" style="color:' + (status.cls === 'live' ? 'var(--danger)' : 'var(--text-muted)') + '">' + status.emoji + ' ' + status.label + '</span></div>' +
-                '<div class="score-big"><div class="team home"><span class="badge">⚽</span><span class="name">' + sanitizeHTML(match.home) + '</span></div><div class="score ' + (match.status === 'live' ? 'live' : '') + '">' + scoreStr + '</div><div class="team away"><span class="name">' + sanitizeHTML(match.away) + '</span><span class="badge">⚽</span></div></div>' +
-                (match.events && match.events.length > 0 ? '<div style="padding:6px 0;border-top:1px solid var(--border-color);margin-top:4px;"><div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">⚡ События:</div><div style="display:flex;flex-wrap:wrap;gap:2px 8px;font-size:11px;">' + eventsHtml2 + '</div></div>' : '') +
-                '<div style="padding:6px 0;border-top:1px solid var(--border-color);margin-top:4px;"><div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">🧠 AI-ПРОГНОЗЫ:</div><div style="display:flex;flex-wrap:wrap;gap:4px 8px;"><span style="padding:4px 12px;background:var(--bg-primary);border-radius:12px;font-size:12px;border:1px solid var(--border-color);">🎯 ' + match.prediction + '</span><span style="padding:4px 12px;background:var(--bg-primary);border-radius:12px;font-size:12px;border:1px solid var(--border-color);">📊 Уверенность: <span style="color:var(--primary);font-weight:700;">' + match.confidence + '%</span></span>' + (match.isValue ? '<span style="padding:4px 12px;background:var(--success);border-radius:12px;font-size:12px;color:#000;font-weight:700;">💰 VALUE +' + match.ev + '%</span>' : '') + (match.isDerby ? '<span style="padding:4px 12px;background:var(--warning);border-radius:12px;font-size:12px;color:#000;">⚔️ Дерби</span>' : '') + '</div></div>' +
-                '<div style="padding:6px 0;border-top:1px solid var(--border-color);margin-top:4px;"><div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">📊 СТАТИСТИКА (прогноз):</div><div class="stats-grid">' + statsHtml + '</div></div>' +
-                (match.isDerby ? '<div style="padding:6px 10px;background:var(--warning);border-radius:var(--radius-sm);margin-top:4px;color:#000;font-size:12px;font-weight:600;text-align:center;">⚔️ ДЕРБИ! Ожидайте неожиданности</div>' : '') +
-                '<div class="match-actions" style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border-color);"><button class="btn-success" onclick="saveMatchBet(' + match.id + ')" style="flex:1;">💾 Сохранить ставку</button><button class="btn-primary" onclick="generateTurboAnalysis(' + match.id + ')" style="flex:1;">🔥 Турбо-анализ</button><button class="btn-outline" onclick="switchTab(\'home\')" style="flex:0.5;">← Назад</button></div></div>';
         }
+        if (!match) {
+            showToast('⚠️ Матч не найден', 'error');
+            return;
+        }
+        APP_STATE.selectedMatchId = matchId;
+        APP_STATE.currentMatch = match;
+        switchTab('match');
+        var container = document.getElementById('matchDetailContainer');
+        if (!container) {
+            showToast('⚠️ Ошибка загрузки контейнера', 'error');
+            return;
+        }
+        var status = getMatchStatus(match);
+        var scoreStr = (match.homeScore !== null && match.awayScore !== null) ? match.homeScore + ':' + match.awayScore : 'vs';
+        var stats = generateMatchStats(match);
+        var eventsHtml2 = '';
+        if (match.events && match.events.length > 0) {
+            for (var e = 0; e < match.events.length; e++) {
+                eventsHtml2 += '<span><span style="color:var(--text-muted);">' + match.events[e].minute + "'</span> " + match.events[e].emoji + ' ' + match.events[e].label + '</span>';
+            }
+        }
+        var statsHtml = '';
+        for (var s = 0; s < stats.length; s++) {
+            statsHtml += '<div class="stat"><span class="label">' + stats[s].label + '</span><span class="value">' + stats[s].value + '</span></div>';
+        }
+        
+        // Проверяем наличие элементов перед вставкой
+        var starsRating = '⭐'.repeat(match.rating || 3) + '☆'.repeat(5 - (match.rating || 3));
+        
+        container.innerHTML = 
+            '<div class="match-detail-card">' +
+                '<div class="header-detail">' +
+                    '<span class="league">' + (match.flag || '🌍') + ' ' + (match.leagueName || match.league) + '</span>' +
+                    '<span class="status" style="color:' + (status.cls === 'live' ? 'var(--danger)' : 'var(--text-muted)') + '">' + status.emoji + ' ' + status.label + '</span>' +
+                '</div>' +
+                '<div class="score-big">' +
+                    '<div class="team home"><span class="badge">⚽</span><span class="name">' + sanitizeHTML(match.home) + '</span></div>' +
+                    '<div class="score ' + (match.status === 'live' ? 'live' : '') + '">' + scoreStr + '</div>' +
+                    '<div class="team away"><span class="name">' + sanitizeHTML(match.away) + '</span><span class="badge">⚽</span></div>' +
+                '</div>' +
+                (match.events && match.events.length > 0 ? 
+                    '<div style="padding:6px 0;border-top:1px solid var(--border-color);margin-top:4px;">' +
+                        '<div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">⚡ События:</div>' +
+                        '<div style="display:flex;flex-wrap:wrap;gap:2px 8px;font-size:11px;">' + eventsHtml2 + '</div>' +
+                    '</div>' : '') +
+                '<div style="padding:6px 0;border-top:1px solid var(--border-color);margin-top:4px;">' +
+                    '<div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">🧠 AI-ПРОГНОЗЫ:</div>' +
+                    '<div style="display:flex;flex-wrap:wrap;gap:4px 8px;">' +
+                        '<span style="padding:4px 12px;background:var(--bg-primary);border-radius:12px;font-size:12px;border:1px solid var(--border-color);">🎯 ' + match.prediction + '</span>' +
+                        '<span style="padding:4px 12px;background:var(--bg-primary);border-radius:12px;font-size:12px;border:1px solid var(--border-color);">📊 Уверенность: <span style="color:var(--primary);font-weight:700;">' + match.confidence + '%</span></span>' +
+                        (match.isValue ? '<span style="padding:4px 12px;background:var(--success);border-radius:12px;font-size:12px;color:#000;font-weight:700;">💰 VALUE +' + match.ev + '%</span>' : '') +
+                        (match.isDerby ? '<span style="padding:4px 12px;background:var(--warning);border-radius:12px;font-size:12px;color:#000;">⚔️ Дерби</span>' : '') +
+                        '<span style="padding:4px 12px;background:var(--bg-primary);border-radius:12px;font-size:12px;border:1px solid var(--border-color);">⭐ ' + starsRating + '</span>' +
+                    '</div>' +
+                '</div>' +
+                '<div style="padding:6px 0;border-top:1px solid var(--border-color);margin-top:4px;">' +
+                    '<div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">📊 СТАТИСТИКА (прогноз):</div>' +
+                    '<div class="stats-grid">' + statsHtml + '</div>' +
+                '</div>' +
+                (match.isDerby ? 
+                    '<div style="padding:6px 10px;background:var(--warning);border-radius:var(--radius-sm);margin-top:4px;color:#000;font-size:12px;font-weight:600;text-align:center;">⚔️ ДЕРБИ! Ожидайте неожиданности</div>' : '') +
+                '<div class="match-actions" style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border-color);">' +
+                    '<button class="btn-success" onclick="saveMatchBet(' + match.id + ')" style="flex:1;">💾 Сохранить ставку</button>' +
+                    '<button class="btn-primary" onclick="generateTurboAnalysis(' + match.id + ')" style="flex:1;">🔥 Турбо-анализ</button>' +
+                    '<button class="btn-outline" onclick="switchTab(\'home\')" style="flex:0.5;">← Назад</button>' +
+                '</div>' +
+            '</div>';
+    } catch (error) {
+        console.error('❌ Ошибка в openMatchDetail:', error);
+        showToast('⚠️ Ошибка загрузки деталей матча', 'error');
+        var container = document.getElementById('matchDetailContainer');
+        if (container) {
+            container.innerHTML = '<div class="empty-state"><span class="icon">⚠️</span>Ошибка загрузки<div class="sub">Попробуйте вернуться и выбрать матч заново</div></div>';
+        }
+    }
+}
 
         function generateMatchStats(match) {
             var homeXG = parseFloat(match.aiHome) || 1.2;
@@ -3603,33 +3709,46 @@
         }
 
         function turboAnalyze(matchId) {
-            var match = null;
-            var matches = getMatches();
-            for (var i = 0; i < matches.length; i++) {
-                if (matches[i].id === matchId) {
-                    match = matches[i];
-                    break;
-                }
+    try {
+        var match = null;
+        var matches = getMatches();
+        for (var i = 0; i < matches.length; i++) {
+            if (matches[i].id === matchId) {
+                match = matches[i];
+                break;
             }
-            if (!match) {
-                showToast('⚠️ Матч не найден', 'error');
-                return;
-            }
-            var card = document.querySelector('.match-card[onclick*="' + matchId + '"]');
-            if (card) {
-                var btn = card.querySelector('.btn-turbo');
-                if (btn) {
-                    btn.disabled = true;
-                    btn.innerHTML = '⏳ Анализ...';
-                }
-                var turboResult = card.querySelector('.turbo-result');
-                if (turboResult) {
-                    turboResult.classList.remove('active');
-                    turboResult.innerHTML = '';
-                }
-            }
-            generateTurboAnalysis(matchId);
         }
+        if (!match) {
+            showToast('⚠️ Матч не найден', 'error');
+            return;
+        }
+        // Находим карточку матча
+        var cards = document.querySelectorAll('.match-card');
+        var card = null;
+        for (var j = 0; j < cards.length; j++) {
+            if (cards[j].innerHTML.includes('onclick="openMatchDetail(' + matchId + ')')) {
+                card = cards[j];
+                break;
+            }
+        }
+        if (card) {
+            var btn = card.querySelector('.btn-turbo');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '⏳ Анализ...';
+            }
+            var turboResult = card.querySelector('.turbo-result');
+            if (turboResult) {
+                turboResult.classList.remove('active');
+                turboResult.innerHTML = '';
+            }
+        }
+        generateTurboAnalysis(matchId);
+    } catch (error) {
+        console.error('❌ Ошибка в turboAnalyze:', error);
+        showToast('⚠️ Ошибка запуска Турбо-анализа', 'error');
+    }
+}
 
         // ===== AI МОДЕЛЬ =====
         function updateAIStatus() {
@@ -4763,11 +4882,12 @@
             console.log('🚀 ПРИЛОЖЕНИЕ ГОТОВО К РАБОТЕ!');
         });
 
-        window.onerror = function(msg) {
-            console.error('❌ Ошибка:', msg);
-            showToast('⚠️ Произошла ошибка', 'error');
-            return false;
-        };
+        window.onerror = function(msg, url, line, col, error) {
+    console.error('❌ Ошибка:', msg);
+    console.error('📍 Файл:', url, 'Строка:', line);
+    showToast('⚠️ Произошла ошибка: ' + msg, 'error');
+    return false;
+};
 
         window.addEventListener('unhandledrejection', function(event) {
             console.error('❌ Необработанный Promise:', event.reason);
